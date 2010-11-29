@@ -1,0 +1,11 @@
+Hs2client is a mysql Handler Socket Scala Client
+
+If you have no idea about the Handler Socket Plugin of Mysql Database, google it :O)
+
+With Hs2client, I want to make anything possible be transparent to the users, some features may be:
+<1> automatically generate index id, but can be customized if necessary;
+<2> return all of the columns by default , but can be filtered if necessary;
+<3> Event driven style API and synchronous API will both be supported;
+<4> customized connection pooling;
+<5> easy to use and configure.
+<6> others...
