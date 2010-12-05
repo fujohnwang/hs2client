@@ -12,9 +12,8 @@ class HelloWorldProject(info: ProjectInfo) extends DefaultProject(info)
 	val nexusScalaToolsRepo    = "Nexus Scala tools Repo" at "http://nexus.scala-tools.org/content/repositories/releases/"
 	val fuseSourceRepo         = "HawtDispatch Repo" at "http://repo.fusesource.com/nexus/content/repositories/public"
 	
-	val netty = "org.jboss.netty" % "netty" % "3.2.2.Final"
 	val slf4jApi = "org.slf4j" % "slf4j-api" % "1.6.1"
 	val logback = "ch.qos.logback" % "logback-core" % "0.9.21"
 	val logbackClassic = "ch.qos.logback" % "logback-classic" % "0.9.21"
-	
+	val mysqlJdbcConnector = "mysql" % "mysql-connector-java" % "5.1.12"
 }
