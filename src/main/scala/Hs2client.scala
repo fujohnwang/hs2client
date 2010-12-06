@@ -8,7 +8,7 @@ package hs2client{
 		port4r:Int=9998, 
 		port4wr:Int=9999, 
 		connectionEncoding:String="utf-8", 
-		readBuffer:Int=4096, 
+		readBufferSize:Int=1024*128, 
 		connectTimeout:Int=10000,
 		readerPoolSize:Int=12, 
 		writerPoolSize:Int=1) 
@@ -49,11 +49,12 @@ package hs2client{
 	trait ConnectionHolder {
 		def connection():Socket
 		def connectionEncoding():String
+		def readBufferSize():Int
 		def connectionClosed():Unit
 	}
 	
 
-	case class SimpleConnectionHolder(connection:Socket, connectionEncoding:String) extends ConnectionHolder {
+	case class SimpleConnectionHolder(connection:Socket, connectionEncoding:String, readBufferSize:Int) extends ConnectionHolder {
 		def connectionClosed(){
 			connection.close
 		}
@@ -73,7 +74,7 @@ package hs2client{
 			buf.append(limit).append("\t").append(offset).append("\n")
 			logger.debug("query string:{}", buf.toString)
 			E.writeTo(buf.toString.getBytes(connHolder.connectionEncoding), connHolder.connection.getOutputStream)
-			val resultBytes =E.readFrom(connHolder.connection.getInputStream) 
+			val resultBytes =E.readFrom(connHolder.connection.getInputStream, connHolder.readBufferSize) 
 			val result = E.assembly(resultBytes, connHolder.connectionEncoding)
 			if(result.errorCode != 0){throw new RuntimeException("failed to query with server response:"+result)}
 			result.columns
@@ -104,7 +105,7 @@ package hs2client{
 			buf.append("\n")
 			// write command 
 			E.writeTo(buf.toString.getBytes(connHolder.connectionEncoding), connHolder.connection.getOutputStream)
-			val resultBytes =E.readFrom(connHolder.connection.getInputStream) 
+			val resultBytes =E.readFrom(connHolder.connection.getInputStream, connHolder.readBufferSize) 
 			val result = E.assembly(resultBytes, connHolder.connectionEncoding)
 			if(result.errorCode != 0){throw new RuntimeException("failed to update with server response:"+result)}
 			result.columns(0).toInt
@@ -128,7 +129,7 @@ package hs2client{
 				.append(mop)
 				.append("\n");
 			E.writeTo(buf.toString.getBytes(connHolder.connectionEncoding), connHolder.connection.getOutputStream)
-			val resultBytes =E.readFrom(connHolder.connection.getInputStream) 
+			val resultBytes =E.readFrom(connHolder.connection.getInputStream, connHolder.readBufferSize) 
 			val result = E.assembly(resultBytes, connHolder.connectionEncoding)
 			if(result.errorCode != 0){throw new RuntimeException("failed to delete with server response:"+result)}
 			result.columns(0).toInt
@@ -149,7 +150,7 @@ package hs2client{
 			buf.append("\n")
 			
 			E.writeTo(buf.toString.getBytes(connHolder.connectionEncoding), connHolder.connection.getOutputStream)
-			val resultBytes =E.readFrom(connHolder.connection.getInputStream) 
+			val resultBytes =E.readFrom(connHolder.connection.getInputStream, connHolder.readBufferSize) 
 			val result = E.assembly(resultBytes, connHolder.connectionEncoding)
 			if(result.errorCode != 0){throw new RuntimeException("failed to insert with server response:"+result)}
 			result.columnNumber
@@ -194,14 +195,13 @@ package hs2client{
 			indexIdCache.putIfAbsent(spec, indexId)
 			logger.info("write open index request to hs server side.")
 			E.writeTo(spec.toBytes(indexId, conf.connectionEncoding),  conn.getOutputStream)
-			val resultBytes = E.readFrom(conn.getInputStream)
+			val resultBytes = E.readFrom(conn.getInputStream, conf.readBufferSize)
 			val result = E.assembly(resultBytes, conf.connectionEncoding)
 			if(result.errorCode != 0){
 				conn.close()
 				throw new RuntimeException("failed to open index with result:"+result);
 			}
-			
-			val connHolder = new SimpleConnectionHolder(conn, conf.connectionEncoding)
+			val connHolder = new SimpleConnectionHolder(conn, conf.connectionEncoding, conf.readBufferSize)
 			if(readOnly){new Hs2ReadOnlySessionImpl(indexId, spec, connHolder)}else{new Hs2SessionImpl(indexId, spec, connHolder)}
 		}
 		
