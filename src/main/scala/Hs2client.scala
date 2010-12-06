@@ -10,6 +10,10 @@ package hs2client{
 		connectionEncoding:String="utf-8", 
 		readBufferSize:Int=1024*128, 
 		connectTimeout:Int=10000,
+		tcpNoDelay:Boolean=true,
+		keepAlive:Boolean=true,
+		reuseAddress:Boolean=true,
+		soTimeout:Int=0,
 		readerPoolSize:Int=12, 
 		writerPoolSize:Int=1) 
 	
@@ -206,13 +210,21 @@ package hs2client{
 		}
 		
 		def getConnection():Socket = {
-			val socket = new Socket()
+			val socket = new Socket
+			socket.setTcpNoDelay(conf.tcpNoDelay)
+			socket.setKeepAlive(conf.keepAlive)
+			socket.setReuseAddress(conf.reuseAddress)
+			socket.setSoTimeout(conf.soTimeout)
 			socket.connect(new InetSocketAddress(conf.host, conf.port4wr), conf.connectTimeout)
 			socket
 		}
 		
 		def getReadOnlyConnection():Socket = {
-			val socket = new Socket();
+			val socket = new Socket
+			socket.setTcpNoDelay(conf.tcpNoDelay)
+			socket.setKeepAlive(conf.keepAlive)
+			socket.setReuseAddress(conf.reuseAddress)
+			socket.setSoTimeout(conf.soTimeout)
 			socket.connect(new InetSocketAddress(conf.host, conf.port4r), conf.connectTimeout)
 			socket
 		}

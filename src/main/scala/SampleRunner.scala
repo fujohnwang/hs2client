@@ -2,6 +2,9 @@ object SandboxRunner {
   import hs2client._
   def main(args: Array[String]): Unit = {
 	val sessionFactory = new Hs2SessionFactoryImpl(Hs2Conf("10.16.201.39",connectionEncoding="GBK"))
+	/*
+	* open a readOnly session for read
+	*/
 	val session = sessionFactory.openSession(OpenIndexSpec("test", "dw", Array("id", "value")), true)
 	try{
 		println("result: "+session.get(Eq(),Array("13")).mkString(","))
@@ -10,6 +13,9 @@ object SandboxRunner {
 		session.close
 	}
 	
+	/*
+	* open a read/write session for update
+	*/
 	val wrsession = sessionFactory.openSession(OpenIndexSpec("test", "dw", Array("value")))
 	try{
 		wrsession.insert(Array("17", "darren wang"))
