@@ -1,0 +1,3 @@
+TODO Next Stage:
+1- add connection pooling support;
+2- implement Hs2ClientTemplate to ease the usage of the API.

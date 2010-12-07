@@ -7,7 +7,13 @@ object SandboxRunner {
 	*/
 	val session = sessionFactory.openSession(OpenIndexSpec("test", "dw", Array("id", "value")), true)
 	try{
-		println("result: "+session.get(Eq(),Array("13")).mkString(","))
+		println("result: "+session.get(Eq(),Array("13")).next.columns.mkString(","))
+		// or
+		val result = session.get(Eq(),Array("13"))
+		if(result.hasNext()){
+			val row = result.next
+			println("column value of 1 : "+row.column(1))
+		}
 	}
 	finally{
 		session.close

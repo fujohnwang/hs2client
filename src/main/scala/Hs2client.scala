@@ -1,7 +1,7 @@
 package hs2client{
 	import java.net._, java.util._, java.util.concurrent._, java.util.concurrent.atomic._, java.io._
 	import org.slf4j._
-	import scala.util.control._
+	import scala.util.control._, scala.collection.mutable.ArrayBuffer
 
 	case class Hs2Conf(
 		host:String, 
@@ -24,8 +24,29 @@ package hs2client{
 	case class GE(symbol:String=">=") extends Op
 	case class LE(symbol:String="<=") extends Op
 	case class Ins(symbol:String="+")  extends Op
-	
-	case class Hs2Result(errorCode:Int, columnNumber:Int, columns:Array[String])
+
+	case class Row(columns:Array[String]) {
+		def column(i:Int):String = {
+		      if(i >= columns.length){ throw new IllegalArgumentException(i+" is an illegal index for columns array.")}else{ columns(i)}
+		}
+	}
+	case class Hs2Result(errorCode:Int, columnNumber:Int, columns:Array[String]){
+		def toIteratorIfPossible():Iterator[Row] = {
+			if(columns == null || columns.length == 0){return new Iterator[Row]{
+				def hasNext():Boolean = false
+				def next():Row = null
+				def remove(){}
+			}}
+			val rows = new ArrayList[Row]()
+			var cursor = 0
+			val rowCount = columns.length / columnNumber
+			while(cursor < rowCount){
+				rows.add(Row(Arrays.copyOfRange(columns, cursor*columnNumber, cursor*columnNumber+columnNumber)))
+				cursor = cursor+1
+			}
+			rows.iterator
+		}
+	}
 	
 	case class OpenIndexSpec(db:String, table:String, columns:Array[String], index:String="PRIMARY")
 	{
@@ -43,7 +64,7 @@ package hs2client{
 	
 	trait Hs2Session {
 		def indexId():Int
-		def get(op:Op, indexValues:Array[String], limit:Int=1, offset:Int=0):Array[String]
+		def get(op:Op, indexValues:Array[String], limit:Int=1, offset:Int=0):Iterator[Row]
 		def update(op:Op, indexValues:Array[String], colValues:Array[String], limit:Int=1, offset:Int=0, mop:Char='U'):Int
 		def delete(op:Op, indexValues:Array[String], limit:Int=1, offset:Int=0, mop:Char='D'):Int
 		def insert(colValues:Array[String], op:Op=Ins()):Int
@@ -68,7 +89,7 @@ package hs2client{
  	class Hs2SessionImpl(indexId:Int, spec:OpenIndexSpec,connHolder:ConnectionHolder) extends Hs2Session{
 		val logger = LoggerFactory.getLogger(getClass)
 		def indexId():Int = {indexId}
-		def get(op:Op, indexValues:Array[String], limit:Int=1, offset:Int=0):Array[String] = {
+		def get(op:Op, indexValues:Array[String], limit:Int=1, offset:Int=0):Iterator[Row] = {
 			val buf = new StringBuilder() // don't use number as constructor argument of stringBuilder, otherwise, it may ignore it.
 			buf.append(indexId).append("\t").append(op.symbol).append("\t").append(indexValues.length).append("\t")
 			indexValues.foreach(v=>{
@@ -81,7 +102,7 @@ package hs2client{
 			val resultBytes =E.readFrom(connHolder.connection.getInputStream, connHolder.readBufferSize) 
 			val result = E.assembly(resultBytes, connHolder.connectionEncoding)
 			if(result.errorCode != 0){throw new RuntimeException("failed to query with server response:"+result)}
-			result.columns
+			result.toIteratorIfPossible
 		}
 		def update(op:Op, indexValues:Array[String], colValues:Array[String], limit:Int=1, offset:Int=0, mop:Char='U'):Int = {
 			val buf = new StringBuilder()
@@ -332,7 +353,7 @@ package hs2client{
 	
 	/* wrap the template behavior with hs2client usage, but not so effecient as raw usage since it will open/close session frequently.*/
 	class Hs2ClientTemplate(){
-		def get(openIndexSpec:OpenIndexSpec, op:Op, indexValues:Array[String], limit:Int=1, offset:Int=0):Array[String] = {
+		def get(openIndexSpec:OpenIndexSpec, op:Op, indexValues:Array[String], limit:Int=1, offset:Int=0):Iterator[Row] = {
 			null
 		}
 		def update(openIndexSpec:OpenIndexSpec, op:Op, indexValues:Array[String], colValues:Array[String], limit:Int=1, offset:Int=0, mop:Char='U'):Int = {
