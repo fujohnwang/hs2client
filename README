@@ -1,5 +1,5 @@
 Hs2client is a mysql Handler Socket Scala Client
-see HandlerSocket (https://github.com/ahiguti/HandlerSocket-Plugin-for-MySQL)
+see HandlerSocket ([[https://github.com/ahiguti/HandlerSocket-Plugin-for-MySQL]])
 
 If you have no idea about the Handler Socket Plugin of Mysql Database, google it :O)
 
